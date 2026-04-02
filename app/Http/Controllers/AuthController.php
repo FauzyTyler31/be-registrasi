@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
+use App\Helpers\ResponseHelper;
 
 
 class AuthController extends Controller
@@ -57,19 +58,12 @@ class AuthController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Validation errors',
-                    'errors' => $validator->errors()
-                ], 422);
-            }
+                return ResponseHelper::error('Validation errors', $validator->errors(), 422);
+                }
 
-            $user = User::where('email', $request->email)->first();
-            if (!$user || !Hash::check($request->password, $user->password)) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Email or password is invalid',
-                ], 401);
+                $user = User::where('email', $request->email)->first();
+                if (!$user || !Hash::check($request->password, $user->password)) {
+                        return ResponseHelper::error('Email or password is invalid', '' ,401);
             }
 
             $token = $user->createToken('auth_token')->plainTextToken;
@@ -77,14 +71,10 @@ class AuthController extends Controller
                 'status' => true,
                 'message' => 'Login success',
                 'data' => $user,
-                'token' => $token
+                'token' => $token,
             ]);
         } catch (\Throwable $th) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Internal server error',
-                'error' => $th->getMessage()
-            ], 500);
+            return ResponseHelper::error('Internal server error',  $th->getMessage() ,500);
         }
     }
 }
