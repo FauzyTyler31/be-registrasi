@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
+
 class UserController extends Controller
 {
     /**
@@ -13,13 +14,15 @@ class UserController extends Controller
      */
     public function index()
     {
-        $users = User::all();
+        $users = User::with('role')->get();
         return response()->json([
             'status' => true,
             'message' => 'Get user Success',
             'data' => $users,
         ]);
     }
+
+
 
     /**
      * Store a newly created resource in storage.
@@ -31,6 +34,7 @@ class UserController extends Controller
                 'name' => 'required|string',
                 'email' => 'required|email|unique:users,email',
                 'password' => 'required|min:6',
+                'role_id' => $request->role_id
             ]);
 
             if ($validator->fails()) {
@@ -45,7 +49,8 @@ class UserController extends Controller
             $user = User::create([
                 'name' => $request->name,
                 'email' => $request->email,
-                'password' => $request->password
+                'password' => $request->password,
+                'role_id' => $request->role_id
             ]);
 
             return response()->json([
@@ -67,7 +72,7 @@ class UserController extends Controller
      */
     public function show(string $id)
     {
-        $users = User::find($id);
+        $users = User::with('role')->find($id);
         return response()->json([
             'status' => true,
             'message' => 'Get user by id Success',
@@ -84,7 +89,8 @@ class UserController extends Controller
             $validator = Validator::make($request->all(), [
                 'name' => 'required|string',
                 'email' => 'required|email|unique:users,email,' . $id,
-                'password' => 'required|min:6'
+                'password' => 'nullable|min:6',
+                'role_id' => 'required|exists:roles,id'
             ]);
 
             if ($validator->fails()) {
@@ -96,13 +102,18 @@ class UserController extends Controller
             $data = [
                 'name' => $request->name,
                 'email' => $request->email,
+                'role_id' => $request->role_id
             ];
+            $user = User::find($id);
+
             //jika user mengisi password
             if ($request->filled('password')) {
                 $data['password'] = $request->password;
+            } else {
+                $data['password'] = $user->password;
             }
 
-            $user = User::find($id);
+
             $user->update($data);
             return response()->json([
                 'status' => true,
